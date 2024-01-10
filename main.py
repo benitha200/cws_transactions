@@ -1,6 +1,24 @@
 import streamlit as st
 import mysql.connector
 
+custom_theme = """
+    <style>
+        body {
+            color: #262730;
+            background-color: #d6e1d4;
+        }
+        .streamlit-expanderHeader, .streamlit-expanderContent {
+            background-color: #F0F2F6;
+        }
+        .css-17eq0hr {
+            font-family: sans-serif;
+        }
+    </style>
+"""
+
+# Apply the custom theme
+st.markdown(custom_theme, unsafe_allow_html=True)
+
 def connect_to_mysql():
     return mysql.connector.connect(
         host="sql11.freemysqlhosting.net",
@@ -120,7 +138,8 @@ def get_farmer_list():
 
     return farmers
 
-st.title("Welcome!")
+# st.title("Welcome! :sunglasses:")
+st.header(":blue[Welcome]! :sunglasses:",divider='rainbow')
 st.write("Welcome to App to record Transactions!")
 st.write("Use the navigation to explore different sections.")
 

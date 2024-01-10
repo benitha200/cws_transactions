@@ -2,7 +2,7 @@ import streamlit as st
 import datetime
 from main import get_cws_list, connect_to_mysql
 
-@st.cache_data
+
 def get_farmer_list():
     connection = connect_to_mysql()
     cursor = connection.cursor()
@@ -87,8 +87,22 @@ prebatch = st.text_input("Prebatch")
 
 # Batch Number Generation
 batch_number = str(last_two_digits_of_year) + str(cws_code.strip()) + str(formatted_month) + str(formatted_day) + str(cherry_grade)
-
 batch = st.text_input("Batch_number", batch_number)
+
+error_placeholder = st.empty()
+
+# Validate the inputs
+if not prebatch:
+    error_placeholder.error("Prebatch is required. Please enter a value.")
+elif not paper_grn_no:
+    error_placeholder.error("Paper GRN No is required. Please enter a value.")
+elif not 2024 <= season <= 2024:
+    error_placeholder.error("Season should be 2024.")
+elif not purchase_date:
+    error_placeholder.error("Purchase Date is required. Please select a date.")
+else:
+    # Your Streamlit app code for valid inputs goes here
+    st.success("Hope you entered Valid Data!")
 
 # Insert data into transactions table
 if st.button("Save Transaction"):
