@@ -1,14 +1,12 @@
 import streamlit as st
-import datetime
 from main import get_cws_list, connect_to_mysql
 
-
-def get_farmer_list():
+def get_farmer_list(cws_code):
     connection = connect_to_mysql()
     cursor = connection.cursor()
 
-    select_farmers_query = "SELECT * FROM farmer_details;"
-    cursor.execute(select_farmers_query)
+    select_farmers_query = "SELECT * FROM farmer_details WHERE farmer_code LIKE %s;"
+    cursor.execute(select_farmers_query, (f"%{cws_code.strip()}%",))
     farmers_data = cursor.fetchall()
 
     # Get column names
@@ -25,86 +23,67 @@ def get_farmer_list():
 # Streamlit app
 st.title('Record Transaction')
 
-# CWS
-cws = get_cws_list()
-cws_options = [f" {cws_['cws_code']} ({cws_['cws_name']})" for cws_ in cws]
-selected_cws = st.selectbox("Select CWS", cws_options)
-cws_code = selected_cws.split(' (')[0]
-cws_name = selected_cws.split(')')[0].split('(')[1]
+with st.spinner("Loading..."):
+    # CWS
+    cws = get_cws_list()
+    cws_options = [f" {cws_['cws_code']} ({cws_['cws_name']})" for cws_ in cws]
+    selected_cws = st.selectbox("Select CWS", cws_options)
+    if selected_cws:
+        cws_code = selected_cws.split(' (')[0].strip()
+        cws_name = selected_cws.split(')')[0].split('(')[1].strip()
 
-purchase_date = st.date_input("Date")
+        # Farmer
+        farmers = get_farmer_list(cws_code)
+        filtered_farmers = [farmer for farmer in farmers]
 
-# Formatting purchase code
-last_two_digits_of_year = purchase_date.strftime('%y')
-formatted_month = purchase_date.strftime('%m')
-formatted_day = purchase_date.strftime('%d')
-season = st.number_input("Season", min_value=2024, max_value=2024)
-
-# Farmer
-if selected_cws:
-    cws_code = selected_cws.split(' (')[0]
-    cws_name = selected_cws.split(')')[0].split('(')[1]
-
-    # Filter Farmers based on CWS Code
-    farmers = get_farmer_list()
-
-    # Check if there are farmers in the selected CWS
-    filtered_farmers = [farmer for farmer in farmers if cws_code.strip() in farmer['farmer_code']]
-
-    if not filtered_farmers:
-        st.warning("No farmers in the selected CWS.")
-    else:
-        # Create the list for the Selectbox
-        farmer_names = [f" {farmer['farmer_names']} ({farmer['farmer_code']})" for farmer in filtered_farmers]
-
-        # Select Farmer
-        selected_user = st.selectbox("Select Farmer", farmer_names)
-
-        # Check if a Farmer is selected
-        if selected_user:
-            selected_farmer_name = selected_user.split(' (')[0]
-            selected_farmer_code = selected_user.split(')')[0].split('(')[1]
+        if not filtered_farmers:
+            st.warning("No farmers in the selected CWS.")
         else:
-            st.warning("Please select a Farmer.")
-else:
-    st.warning("Please select a CWS before proceeding.")
+            farmer_names = [f" {farmer['farmer_names']} ({farmer['farmer_code']})" for farmer in filtered_farmers]
+            selected_user = st.selectbox("Select Farmer", farmer_names)
 
-cherry_kg = st.number_input("Cherry_kg", step=1, min_value=1)
-farmer_card_option = st.selectbox("Does the farmer have a card?", ("yes", "no"))
-cherry_grade = st.selectbox("Cherry grade:", ("CA", "CB", 'NA', 'NB'))
+            if selected_user:
+                selected_farmer_name = selected_user.split(' (')[0].strip()
+                selected_farmer_code = selected_user.split(')')[0].split('(')[1].strip()
+            else:
+                st.warning("Please select a Farmer.")
+    else:
+        st.warning("Please select a CWS before proceeding.")
 
-if cherry_grade in ("CA", "NA"):
-    price = 410
-else:
-    price = 100
+    purchase_date = st.date_input("Date")
 
-price_selection = st.number_input("Price", min_value=price, max_value=price)
-paper_grn_no = st.text_input("Paper GRN No")
-transport = st.number_input("Transport/Kg", step=1)
-total_rwf = cherry_kg * (price_selection + transport)
+    # Formatting purchase code
+    last_two_digits_of_year = purchase_date.strftime('%y')
+    formatted_month = purchase_date.strftime('%m')
+    formatted_day = purchase_date.strftime('%d')
 
-prebatch = st.text_input("Prebatch")
+    season = st.number_input("Season", min_value=2024, max_value=2024)
 
-# Batch Number Generation
-batch_number = str(last_two_digits_of_year) + str(cws_code.strip()) + str(formatted_month) + str(formatted_day) + str(cherry_grade)
-batch = st.text_input("Batch_number", batch_number)
+    # Transaction details
+    cherry_kg = st.number_input("Cherry_kg", step=1, min_value=1)
+    farmer_card_option = st.selectbox("Does the farmer have a card?", ("yes", "no"))
+    cherry_grade = st.selectbox("Cherry grade:", ("CA", "CB", 'NA', 'NB'))
 
-error_placeholder = st.empty()
+    price = 410 if cherry_grade in ("CA", "NA") else 100
+    price_selection = st.number_input("Price", min_value=price, max_value=price)
 
-# Validate the inputs
-if not prebatch:
-    error_placeholder.error("Prebatch is required. Please enter a value.")
-elif not paper_grn_no:
-    error_placeholder.error("Paper GRN No is required. Please enter a value.")
-elif not 2024 <= season <= 2024:
-    error_placeholder.error("Season should be 2024.")
-elif not purchase_date:
-    error_placeholder.error("Purchase Date is required. Please select a date.")
-else:
-    # Your Streamlit app code for valid inputs goes here
-    st.success("Hope you entered Valid Data!")
+    paper_grn_no = st.text_input("Paper GRN No")
+    transport = st.number_input("Transport/Kg", step=1)
+    total_rwf = cherry_kg * (price_selection + transport)
+    prebatch = st.text_input("Prebatch")
 
-# Insert data into transactions table
+    # generate batch number
+    batch_number = f"{last_two_digits_of_year}{cws_code}{formatted_month}{formatted_day}{cherry_grade}"
+    batch = st.text_input("Batch_number", batch_number)
+
+    error_placeholder = st.empty()
+
+    # Data Validation
+    if not prebatch or not paper_grn_no or not 2024 <= season <= 2024 or not purchase_date:
+        error_placeholder.error("Please fill in all required fields.")
+    else:
+        st.success("Hope you entered Valid Data!")
+
 if st.button("Save Transaction"):
     connection = connect_to_mysql()
     cursor = connection.cursor()
@@ -127,4 +106,3 @@ if st.button("Save Transaction"):
     connection.close()
 
     st.success("Transaction saved successfully!")
-
