@@ -1,5 +1,6 @@
 import streamlit as st
 import mysql.connector
+from mysql.connector import pooling
 
 custom_theme = """
     <style>
@@ -19,14 +20,18 @@ custom_theme = """
 # Apply the custom theme
 st.markdown(custom_theme, unsafe_allow_html=True)
 
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="my_pool",
+    pool_size=5,
+    host="sql11.freemysqlhosting.net",
+    user="sql11675963",
+    password="zw5PVRtTgx",
+    database="sql11675963",
+    port=3306
+)
+
 def connect_to_mysql():
-    return mysql.connector.connect(
-        host="sql11.freemysqlhosting.net",
-        user="sql11675963",
-        password="zw5PVRtTgx",
-        database="sql11675963",
-        port=3306
-    )
+    return connection_pool.get_connection()
 
 def create_cws_table():
     connection=connect_to_mysql()
