@@ -23,12 +23,21 @@ st.markdown(custom_theme, unsafe_allow_html=True)
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="my_pool",
     pool_size=5,
-    host="sql11.freemysqlhosting.net",
-    user="sql11675963",
-    password="zw5PVRtTgx",
-    database="sql11675963",
+    host="db4free.net",
+    user="rwacof",
+    password="Rwacof@2024",
+    database="cwstransactions",
     port=3306
 )
+# connection_pool = pooling.MySQLConnectionPool(
+#     pool_name="my_pool",
+#     pool_size=5,
+#     host="sql11.freemysqlhosting.net",
+#     user="sql11675963",
+#     password="zw5PVRtTgx",
+#     database="sql11675963",
+#     port=3306
+# )
 
 def connect_to_mysql():
     return connection_pool.get_connection()
